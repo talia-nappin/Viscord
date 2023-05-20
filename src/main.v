@@ -33,7 +33,7 @@ fn start_client() ! {
 
 	client.on_message(fn (mut client websocket.Client, msg &websocket.Message) ! {
 		if msg.payload.len > 0 {
-			println('$client.id got message: \n$msg.payload')
+			println('$client.id got message: \n$msg.payload.bytestr()')
 		}
 	})
 
