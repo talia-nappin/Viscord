@@ -2,6 +2,8 @@ module main
 
 // imports
 import os
+import x.json2
+import time
 import net.websocket
 import zztkm.vdotenv
 
@@ -27,13 +29,21 @@ fn start_client() ! {
 	discord_token := os.getenv('DISCORD_TOKEN')
 
 	// set websocket callbacks
-	client.on_open(fn (mut client websocket.Client) ! {
-		println('connected to websocket')
-	})
+	client.on_open(fn (mut client websocket.Client) ! {})
 
-	client.on_message(fn (mut client websocket.Client, msg &websocket.Message) ! {
-		if msg.payload.len > 0 {
-			println('$client.id got message: \n$msg.payload.bytestr()')
+	client.on_message(fn (mut client websocket.Client, message &websocket.Message) ! {
+		if message.payload.len > 0 {
+			// decode message payload
+			raw_payload := json2.raw_decode(message.payload.bytestr())!
+			// cast payload to object
+			decoded_payload := raw_payload.as_map()
+			// get message opcode and data
+			opcode := decoded_payload['op'].int()
+			data := decoded_payload['d'] as map[string]json2.Any
+			// handle message opcode
+			if opcode == 10 {
+				go handle_hello_message(mut client, data)
+			}
 		}
 	})
 
@@ -63,6 +73,29 @@ fn start_client() ! {
 	// free websocket client
 	unsafe {
 		client.free()
+	}
+
+}
+
+fn handle_hello_message(mut client websocket.Client, data map[string]json2.Any) ! {
+
+	// get heartbeat interval
+	heartbeat_interval := data['heartbeat_interval'].int()
+	println('heartbeat interval: $heartbeat_interval')
+
+	// send heartbeat
+	go send_heartbeat(mut client, heartbeat_interval)
+
+}
+
+fn send_heartbeat(mut client websocket.Client, heartbeat_interval int) {
+
+	// send heartbeat every heartbeat interval
+	for {
+		time.sleep(heartbeat_interval * time.millisecond)
+		client.write_string('{"op":1,"d":null}') or {
+			println('failed to send heartbeat:\n$err')
+		}
 	}
 
 }
