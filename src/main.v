@@ -39,11 +39,18 @@ fn start_client() ! {
 			decoded_payload := raw_payload.as_map()
 			// get message opcode and data
 			opcode := decoded_payload['op'].int()
-			data := decoded_payload['d'] as map[string]json2.Any
+			// get data from payload
+			data := if decoded_payload['d'] is json2.Null {
+				json2.null
+			} else {
+				decoded_payload['d'] as map[string]json2.Any
+			}
+				
 			// handle message opcode
 			if opcode == 10 {
 				go handle_hello_message(mut client, data)
 			}
+			
 		}
 	})
 
@@ -90,12 +97,17 @@ fn handle_hello_message(mut client websocket.Client, data map[string]json2.Any) 
 
 fn send_heartbeat(mut client websocket.Client, heartbeat_interval int) {
 
+	mut heartbeat := map[string]json2.Any{}
+	heartbeat['op'] = 1
+	heartbeat['d'] = json2.null
+
 	// send heartbeat every heartbeat interval
 	for {
 		time.sleep(heartbeat_interval * time.millisecond)
-		client.write_string('{"op":1,"d":null}') or {
+		client.write_string(heartbeat.str()) or {
 			println('failed to send heartbeat:\n$err')
 		}
+		println('sent heartbeat')
 	}
 
 }
