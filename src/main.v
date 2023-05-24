@@ -78,7 +78,6 @@ fn start_client() ! {
 	unsafe {
 		client.free()
 	}
-
 }
 
 fn handle_hello_message(mut client websocket.Client, data map[string]json2.Any) ! {
