@@ -20,6 +20,20 @@ fn main() {
 
 }
 
+struct Channel {
+	pub:
+		name string
+		id string
+		@type i64
+}
+
+struct Guild {
+	pub:
+		name string
+		id string
+		channels []Channel
+}
+
 fn start_client() ! {
 
 	// create websocket client
@@ -48,24 +62,53 @@ fn start_client() ! {
 				go handle_hello_message(mut client, data)
 
 			} else if opcode == 11 { // heartbeat ack
-				println('$time.now() [ ACK ] heartbeat acknowledged')
+				println('$time.now() [ACK  ] Heartbeat acknowledged')
 
-			} else if opcode == 0 && event_name == 'READY' { // ready
-				//general data
+			} else if opcode == 0 {
+
 				data := decoded_payload['d']! as map[string]json2.Any
-				session_id := data['session_id']! as string
-				resume_url := data['resume_gateway_url']! as string
-				
-				//user data
-				user_data := data['user']! as map[string]json2.Any
-				user_id := user_data['id']! as string
-				username := (user_data['username']! as string) + '#' + (user_data['discriminator']! as string)
 
-				//application data
-				aplication_data := data['application']! as map[string]json2.Any
-				application_id := aplication_data['id']! as string
+				if event_name == 'READY' { // ready
+					//general data
+					session_id := data['session_id']! as string
+					resume_url := data['resume_gateway_url']! as string
+					
+					//user data
+					user_data := data['user']! as map[string]json2.Any
+					user_id := user_data['id']! as string
+					username := (user_data['username']! as string) + '#' + (user_data['discriminator']! as string)
 
-				println('$time.now() [READY]\n\t> Session_id: $session_id\n\t> User_id: $user_id\n\t> Username: $username\n\t> Application_id: $application_id\n\t> Resume_url: $resume_url')
+					//application data
+					aplication_data := data['application']! as map[string]json2.Any
+					application_id := aplication_data['id']! as string
+
+					
+					println('$time.now() [READY] Aplication ready\n\t> Session_id: $session_id\n\t> User_id: $user_id\n\t> Username: $username\n\t> Application_id: $application_id\n\t> Resume_url: $resume_url')
+				} else if event_name == 'GUILD_CREATE' { // guild create
+					//general data
+					guild_name := data['name']! as string
+					guild_id := data['id']! as string
+
+					//channels data
+					channels_data := data['channels']! as []json2.Any
+					mut channels := []Channel{}
+
+					for x in channels_data{
+						channel_data := x as map[string]json2.Any
+						channel_name := channel_data['name']! as string
+						channel_id := channel_data['id']! as string
+						channel_type := channel_data['type']! as i64
+						channels << Channel{channel_name, channel_id, channel_type}
+					}
+
+					guild := Guild{guild_name, guild_id, channels}
+					
+					println('$time.now() [GUILD] Guild created\n\t> Guild_name: $guild.name\n\t> Guild_id: $guild.id\n\t> Channels:\n\t\t> ' + guild.channels.map(it.name + ' (' + it.id + ')').join("\n\t\t> "))
+				} else {
+					println('$time.now() [MSG  ] $opcode $event_name')
+				}
+			} else {
+				println('$time.now() [MSG  ] $opcode $event_name')
 			}
 		}
 	})
@@ -86,6 +129,15 @@ fn start_client() ! {
 	// send authentication payload
 	client.write_string('{"op":2,"d":{"token":"$discord_token","properties":{"os":"linux","browser":"viscord","device":"viscord"},"intents":3}}') or {
 		println('failed to send authentication payload:\n$err')
+	} {
+		println('$time.now() [SEND ] Authentication payload sent')
+	}
+
+	// update presence
+	client.write_string('{"op":3,"d":{"since":null,"activities":[{"name":"Viscord","type":2}],"status":"online","afk":false}}') or {
+		println('failed to update presence:\n$err')
+	} {
+		println('$time.now() [SEND ] Presence update sent')
 	}
 
 	// listen to websocket
@@ -120,6 +172,8 @@ fn send_heartbeat(mut client websocket.Client, heartbeat_interval int) {
 		time.sleep(heartbeat_interval * time.millisecond)
 		client.write_string(heartbeat.str()) or {
 			println('failed to send heartbeat:\n$err')
+		} {
+			println('$time.now() [SEND ] Heartbeat sent')
 		}
 	}
 
