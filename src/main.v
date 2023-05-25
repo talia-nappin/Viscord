@@ -39,15 +39,34 @@ fn start_client() ! {
 			decoded_payload := raw_payload.as_map()
 			// get message opcode and data
 			opcode := decoded_payload['op']!.int()
+			event_name := decoded_payload['t']!.str()
 				
 			// handle message opcode
-			if opcode == 10 {
+
+			if opcode == 10 { // hello
 				data := decoded_payload['d']! as map[string]json2.Any
 				go handle_hello_message(mut client, data)
-			} else if opcode == 11 {
+
+			} else if opcode == 11 { // heartbeat ack
 				println('$time.now() [ ACK ] heartbeat acknowledged')
+
+			} else if opcode == 0 && event_name == 'READY' { // ready
+				//general data
+				data := decoded_payload['d']! as map[string]json2.Any
+				session_id := data['session_id']! as string
+				resume_url := data['resume_gateway_url']! as string
+				
+				//user data
+				user_data := data['user']! as map[string]json2.Any
+				user_id := user_data['id']! as string
+				username := (user_data['username']! as string) + '#' + (user_data['discriminator']! as string)
+
+				//application data
+				aplication_data := data['application']! as map[string]json2.Any
+				application_id := aplication_data['id']! as string
+
+				println('$time.now() [READY]\n\t> Session_id: $session_id\n\t> User_id: $user_id\n\t> Username: $username\n\t> Application_id: $application_id\n\t> Resume_url: $resume_url')
 			}
-			
 		}
 	})
 
