@@ -4,8 +4,6 @@ import net.websocket
 import x.json2
 import time
 
-
-
 pub fn start_client(discord_token string, websocket_url string) ! {
 
 	// create websocket client
@@ -60,6 +58,10 @@ pub fn start_client(discord_token string, websocket_url string) ! {
 					//general data
 					guild_name := data['name']! as string
 					guild_id := data['id']! as string
+								
+					id_u64 := guild_id.u64()
+
+					println(deconstruct_snowflake(id_u64))
 
 					//channels data
 					channels_data := data['channels']! as []json2.Any
