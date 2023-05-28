@@ -29,7 +29,8 @@ pub fn start_client(discord_token string, websocket_url string) ! {
 
 			if opcode == 10 { // hello
 				data := decoded_payload['d']! as map[string]json2.Any
-				go handle_hello_message(mut client, data)
+				heartbeat := data['heartbeat_interval']! as i64
+				go hearbeats(mut client, heartbeat)
 
 			} else if opcode == 11 { // heartbeat ack
 				println('$time.now() [ACK  ] Heartbeat acknowledged')
@@ -129,30 +130,3 @@ pub fn start_client(discord_token string, websocket_url string) ! {
 	}
 }
 
-fn handle_hello_message(mut client websocket.Client, data map[string]json2.Any) ! {
-
-	// get heartbeat interval
-	heartbeat_interval := data['heartbeat_interval']!.int()
-
-	// send heartbeat
-	go send_heartbeat(mut client, heartbeat_interval)
-
-}
-
-fn send_heartbeat(mut client websocket.Client, heartbeat_interval int) {
-
-	mut heartbeat := map[string]json2.Any{}
-	heartbeat['op'] = 1
-	heartbeat['d'] = json2.null
-
-	// send heartbeat every heartbeat interval
-	for {
-		time.sleep(heartbeat_interval * time.millisecond)
-		client.write_string(heartbeat.str()) or {
-			println('failed to send heartbeat:\n$err')
-		} {
-			println('$time.now() [SEND ] Heartbeat sent')
-		}
-	}
-
-}
