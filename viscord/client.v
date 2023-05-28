@@ -15,7 +15,7 @@ pub fn start_client(discord_token string, websocket_url string) ! {
 	// set websocket callbacks
 	client.on_open(fn (mut client websocket.Client) ! {})
 
-	client.on_message(fn (mut client websocket.Client, message &websocket.Message) ! {
+	client.on_message(fn [discord_token] (mut client websocket.Client, message &websocket.Message) ! {
 		if message.payload.len > 0 {
 			// decode message payload
 			raw_payload := json2.raw_decode(message.payload.bytestr())!
@@ -51,9 +51,13 @@ pub fn start_client(discord_token string, websocket_url string) ! {
 					//application data
 					aplication_data := data['application']! as map[string]json2.Any
 					application_id := aplication_data['id']! as string
-
-					
+		
 					println('$time.now() [READY] Aplication ready\n\t> Session_id: $session_id\n\t> User_id: $user_id\n\t> Username: $username\n\t> Application_id: $application_id\n\t> Resume_url: $resume_url')
+				
+					api_version := data['v']! as i64
+
+					go authorize_api(discord_token, api_version)
+
 				} else if event_name == 'GUILD_CREATE' { // guild create
 					//general data
 					guild_name := data['name']! as string
