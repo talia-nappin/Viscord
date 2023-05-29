@@ -11,9 +11,9 @@ fn authorize_api (discord_token string, api_version i64) ! {
 	res := req.do()!
 
 	if res.status_code != 200 {
-		return error("Failerd API authorization: " + res.status_code.str() + " " + res.body)
+		return error("Failerd API authorization: " + res.status_code.str())
 	} else {
-		println("API authorized successfully: " + res.status_code.str() + " " + res.body)
+		println("API authorized successfully: " + res.status_code.str())
 	}
 
 }

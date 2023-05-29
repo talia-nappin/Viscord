@@ -1,18 +1,18 @@
 module viscord
 
-struct Channel {
-	pub:
-		name string
-		id string
-		@type i64
-}
+// struct Channel {
+// 	pub:
+// 		name string
+// 		id string
+// 		@type i64
+// }
 
-struct Guild {
-	pub:
-		name string
-		id string
-		channels []Channel
-}
+// struct Guild {
+// 	pub:
+// 		name string
+// 		id string
+// 		channels []Channel
+// }
 
 const discord_epoch = u64(1420070400000)
 

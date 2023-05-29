@@ -3,6 +3,7 @@ module viscord
 import net.websocket
 import x.json2
 import time
+import os
 
 pub fn start_client(discord_token string, websocket_url string) ! {
 
@@ -60,29 +61,16 @@ pub fn start_client(discord_token string, websocket_url string) ! {
 					go authorize_api(discord_token, api_version)
 
 				} else if event_name == 'GUILD_CREATE' { // guild create
-					//general data
-					guild_name := data['name']! as string
-					guild_id := data['id']! as string
-								
-					id_u64 := guild_id.u64()
-
-					println(deconstruct_snowflake(id_u64))
-
-					//channels data
-					channels_data := data['channels']! as []json2.Any
-					mut channels := []Channel{}
-
-					for x in channels_data{
-						channel_data := x as map[string]json2.Any
-						channel_name := channel_data['name']! as string
-						channel_id := channel_data['id']! as string
-						channel_type := channel_data['type']! as i64
-						channels << Channel{channel_name, channel_id, channel_type}
-					}
-
-					guild := Guild{guild_name, guild_id, channels}
 					
-					println('$time.now() [GUILD] Guild created\n\t> Guild_name: $guild.name\n\t> Guild_id: $guild.id\n\t> Channels:\n\t\t> ' + guild.channels.filter(it.@type == 0).map(it.name + ' (' + it.id + ')').join("\n\t\t> "))
+					// guild data
+					guild_id := data['id']! as string
+					
+					// cache to json file if not cached or if cached but not up to date
+					os.write_file('cache/${guild_id}.json', json2.encode_pretty(data)) or {
+						println('failed to cache guild data:\n$err')
+					} {
+						println('$time.now() [CACHE] Guild data cached')
+					}
 				} else {
 					println('$time.now() [MSG  ] $opcode $event_name')
 				}
